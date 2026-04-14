@@ -8,7 +8,7 @@ ALPACA_SECRET_KEY = os.environ["ALPACA_SECRET_KEY"]
 ALPACA_BASE_URL = os.environ.get("ALPACA_BASE_URL", "https://paper-api.alpaca.markets")
 
 # Universe
-SYMBOLS = ["AAPL", "MSFT", "NVDA", "AMD", "META", "GOOGL", "AMZN"]
+SYMBOLS = ["AAPL", "NVDA", "AMD", "META", "GOOGL", "AMZN"]
 
 # RSI
 RSI_PERIOD = 14
