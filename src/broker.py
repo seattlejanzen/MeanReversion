@@ -4,7 +4,7 @@ from alpaca.trading.enums import OrderSide, TimeInForce
 from alpaca.data.historical import StockHistoricalDataClient
 from alpaca.data.requests import StockBarsRequest
 from alpaca.data.timeframe import TimeFrame
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import pandas as pd
 
 from src.config import ALPACA_API_KEY, ALPACA_SECRET_KEY
@@ -50,3 +50,6 @@ class AlpacaBroker:
 
     def close_position(self, symbol: str) -> object:
         return self.trading.close_position(symbol)
+
+    def get_clock(self):
+        return self.trading.get_clock()

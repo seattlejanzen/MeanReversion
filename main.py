@@ -1,4 +1,7 @@
 import logging
+import time
+from datetime import datetime, timedelta, timezone
+
 from src.broker import AlpacaBroker
 from src.strategy import compute_indicators, get_signal
 from src.risk import implied_stop, position_size
@@ -10,9 +13,11 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
+# Seconds to wait after market open before scanning, so the first bar is available.
+OPEN_BUFFER_SECS = 60
 
-def run():
-    broker = AlpacaBroker()
+
+def scan(broker: AlpacaBroker) -> None:
     portfolio_value = float(broker.get_account().portfolio_value)
     log.info(f"Portfolio value: ${portfolio_value:,.2f}")
 
@@ -60,6 +65,45 @@ def run():
 
         except Exception as e:
             log.error(f"{symbol}: {e}")
+
+
+def sleep_until(dt: datetime, label: str) -> None:
+    """Sleep until a timezone-aware datetime, logging the wait."""
+    now = datetime.now(timezone.utc)
+    secs = max((dt - now).total_seconds(), 0)
+    hrs, rem = divmod(int(secs), 3600)
+    mins = rem // 60
+    log.info(f"{label} — sleeping {hrs}h {mins}m")
+    time.sleep(secs)
+
+
+def run() -> None:
+    broker = AlpacaBroker()
+    log.info("Mean reversion bot started")
+
+    while True:
+        try:
+            clock = broker.get_clock()
+
+            if clock.is_open:
+                log.info("Market is open — running scan")
+                scan(broker)
+
+                # Daily-bar strategy: nothing new to do until tomorrow's open.
+                clock = broker.get_clock()
+                sleep_until(clock.next_open, "Scan complete. Next market open")
+
+            else:
+                next_open = clock.next_open
+                wake_at = next_open + timedelta(seconds=OPEN_BUFFER_SECS)
+                sleep_until(wake_at, f"Market closed (next open {next_open.strftime('%a %Y-%m-%d %H:%M UTC')})")
+
+        except KeyboardInterrupt:
+            log.info("Shutting down")
+            break
+        except Exception as e:
+            log.error(f"Unexpected error: {e} — retrying in 60s")
+            time.sleep(60)
 
 
 if __name__ == "__main__":
