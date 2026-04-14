@@ -18,6 +18,13 @@ def run():
 
     open_positions = broker.get_positions()
 
+    orphaned = [s for s in open_positions if s not in SYMBOLS]
+    for symbol in orphaned:
+        log.warning(
+            f"{symbol}: open position exists but symbol is not in watchlist — skipping. "
+            f"Close manually if needed."
+        )
+
     for symbol in SYMBOLS:
         try:
             bars = broker.get_bars(symbol)
